@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<session>
+  <action>
+    <timestamp>2024-09-13 13:49:00</timestamp>
+    <type>ls</type>
+    <details>Path: /</details>
+  </action>
+  <action>
+    <timestamp>2024-09-13 13:49:03</timestamp>
+    <type>cd</type>
+    <details>Path: tarFolder</details>
+  </action>
+  <action>
+    <timestamp>2024-09-13 13:49:04</timestamp>
+    <type>ls</type>
+    <details>Path: tarFolder</details>
+  </action>
+</session>
