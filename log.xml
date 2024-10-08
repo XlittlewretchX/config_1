@@ -1,18 +1,28 @@
 <?xml version="1.0" ?>
 <session>
   <action>
-    <timestamp>2024-09-13 13:49:00</timestamp>
+    <timestamp>2024-10-08 13:09:08</timestamp>
     <type>ls</type>
     <details>Path: /</details>
   </action>
   <action>
-    <timestamp>2024-09-13 13:49:03</timestamp>
+    <timestamp>2024-10-08 13:09:11</timestamp>
     <type>cd</type>
     <details>Path: tarFolder</details>
   </action>
   <action>
-    <timestamp>2024-09-13 13:49:04</timestamp>
+    <timestamp>2024-10-08 13:09:12</timestamp>
     <type>ls</type>
     <details>Path: tarFolder</details>
+  </action>
+  <action>
+    <timestamp>2024-10-08 13:09:15</timestamp>
+    <type>cd</type>
+    <details>Path: tarFolder/bob</details>
+  </action>
+  <action>
+    <timestamp>2024-10-08 13:09:17</timestamp>
+    <type>ls</type>
+    <details>Path: tarFolder/bob</details>
   </action>
 </session>

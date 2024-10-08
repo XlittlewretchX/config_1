@@ -47,7 +47,6 @@ class FileSystemEmulator:
             action_details.text = details
         self.prettify_log()
 
-
     def ls(self, path=None):
         """Эмуляция команды ls."""
         path = path or self.current_path
@@ -57,10 +56,10 @@ class FileSystemEmulator:
         self.log_action("ls", f"Path: {path}")
 
     def cd(self, path=None):
-        """Эмуляция команды cd."""
+        """Эмуляция команды cd с поддержкой относительных путей."""
         if path is None:
             path = "/"
-        
+
         if path == "..":
             if self.current_path != "/":
                 self.current_path = os.path.dirname(self.current_path.rstrip('/')) or "/"
@@ -69,15 +68,20 @@ class FileSystemEmulator:
             else:
                 print("Already at the root directory")
                 self.log_action("cd", "Failed to move up from root")
-        elif path in self.fs_tree and self.fs_tree[path].isdir():
-            self.current_path = path
-            print(f"Changed directory to {path}")
-            self.log_action("cd", f"Path: {path}")
         else:
-            print(f"No such directory: {path}")
-            self.log_action("cd", f"Failed to change directory to {path}")
+            new_path = os.path.join(self.current_path, path).rstrip('/')
 
-
+            if new_path in self.fs_tree and self.fs_tree[new_path].isdir():
+                self.current_path = new_path
+                print(f"Changed directory to {self.current_path}")
+                self.log_action("cd", f"Path: {self.current_path}")
+            elif new_path.lstrip('/') in self.fs_tree and self.fs_tree[new_path.lstrip('/')].isdir():
+                self.current_path = new_path.lstrip('/')
+                print(f"Changed directory to {self.current_path}")
+                self.log_action("cd", f"Path: {self.current_path}")
+            else:
+                print(f"No such directory: {path}")
+                self.log_action("cd", f"Failed to change directory to {path}")
 
     def find(self, search_name):
         """Эмуляция команды find."""
@@ -96,17 +100,13 @@ class FileSystemEmulator:
 
     def cp(self, src, dest):
         """Эмуляция команды cp с поддержкой копирования в файл или директорию."""
-        # Преобразуем пути в абсолютные с учётом текущего каталога
         src_path = os.path.join(self.current_path, src)
         dest_path = os.path.join(self.current_path, dest)
         
-        # Проверяем, существует ли исходный файл
         if src_path in self.fs_tree and not self.fs_tree[src_path].isdir():
-            # Если dest является директорией, копируем файл с оригинальным именем
             if dest_path in self.fs_tree and self.fs_tree[dest_path].isdir():
                 dest_path = os.path.join(dest_path, os.path.basename(src_path))
             
-            # Копируем файл
             self.fs_tree[dest_path] = self.fs_tree[src_path]
             print(f"Copied {src} to {dest}")
             self.log_action("cp", f"Source: {src_path}, Destination: {dest_path}")
