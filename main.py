@@ -141,7 +141,6 @@ class FileSystemEmulator:
 
 
 if __name__ == "__main__":
-    # Парсинг аргументов командной строки
     parser = argparse.ArgumentParser(description="Эмулятор файловой системы UNIX.")
     parser.add_argument('--hostname', required=True, help='Имя компьютера для приглашения к вводу.')
     parser.add_argument('--tar', required=True, help='Путь к архиву виртуальной файловой системы.')
