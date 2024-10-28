@@ -20,7 +20,9 @@ class FileSystemEmulator:
         fs = {}
         with tarfile.open(self.tar_path, 'r') as tar:
             for member in tar.getmembers():
-                fs[member.name] = member
+                # Normalize path separators to '/'
+                member.name = member.name.replace('\\', '/')
+                fs[member.name.rstrip('/')] = member
         return fs
 
     def init_log(self):
@@ -50,9 +52,12 @@ class FileSystemEmulator:
     def ls(self, path=None):
         """Эмуляция команды ls."""
         path = path or self.current_path
+        normalized_path = path.rstrip('/').replace('\\', '/').lstrip('/')
+
         for item in self.fs_tree:
-            if os.path.dirname(item.rstrip('/')) == path.rstrip('/'):
-                print(os.path.basename(item))
+            parent_dir = os.path.dirname(item.rstrip('/')).replace('\\', '/')
+            if parent_dir == normalized_path:
+                print(os.path.basename(item.rstrip('/')))
         self.log_action("ls", f"Path: {path}")
 
     def cd(self, path=None):
@@ -62,21 +67,28 @@ class FileSystemEmulator:
 
         if path == "..":
             if self.current_path != "/":
-                self.current_path = os.path.dirname(self.current_path.rstrip('/')) or "/"
+                self.current_path = os.path.dirname(self.current_path.rstrip('/')).replace('\\', '/')
+                self.current_path = self.current_path if self.current_path else "/"
                 print(f"Changed directory to {self.current_path}")
                 self.log_action("cd", f"Path: {self.current_path}")
             else:
                 print("Already at the root directory")
                 self.log_action("cd", "Failed to move up from root")
         else:
-            new_path = os.path.join(self.current_path, path).rstrip('/')
+            # Handle absolute and relative paths
+            if path.startswith("/"):
+                new_path = path.lstrip('/')
+            else:
+                new_path = os.path.join(self.current_path, path).replace('\\', '/').rstrip('/')
 
-            if new_path in self.fs_tree and self.fs_tree[new_path].isdir():
-                self.current_path = new_path
+            normalized_new_path = new_path
+
+            if normalized_new_path in self.fs_tree and self.fs_tree[normalized_new_path].isdir():
+                self.current_path = normalized_new_path
                 print(f"Changed directory to {self.current_path}")
                 self.log_action("cd", f"Path: {self.current_path}")
-            elif new_path.lstrip('/') in self.fs_tree and self.fs_tree[new_path.lstrip('/')].isdir():
-                self.current_path = new_path.lstrip('/')
+            elif normalized_new_path.lstrip('/') in self.fs_tree and self.fs_tree[normalized_new_path.lstrip('/')].isdir():
+                self.current_path = normalized_new_path.lstrip('/')
                 print(f"Changed directory to {self.current_path}")
                 self.log_action("cd", f"Path: {self.current_path}")
             else:
@@ -97,23 +109,32 @@ class FileSystemEmulator:
         
         return found
 
+    def cp(self, source, destination):
+        """Эмуляция команды cp."""
+        normalized_source = source.lstrip('/')
+        if normalized_source not in self.fs_tree:
+            print(f"Source file not found: {source}")
+            self.log_action("cp", f"Failed to copy from {source} to {destination}")
+            return
 
-    def cp(self, src, dest):
-        """Эмуляция команды cp с поддержкой копирования в файл или директорию."""
-        src_path = os.path.join(self.current_path, src)
-        dest_path = os.path.join(self.current_path, dest)
-        
-        if src_path in self.fs_tree and not self.fs_tree[src_path].isdir():
-            if dest_path in self.fs_tree and self.fs_tree[dest_path].isdir():
-                dest_path = os.path.join(dest_path, os.path.basename(src_path))
-            
-            self.fs_tree[dest_path] = self.fs_tree[src_path]
-            print(f"Copied {src} to {dest}")
-            self.log_action("cp", f"Source: {src_path}, Destination: {dest_path}")
-        else:
-            print(f"No such file: {src}")
-            self.log_action("cp", f"Failed to copy {src} (source not found)")
+        source_member = self.fs_tree[normalized_source]
 
+        if source_member.isdir():
+            print(f"Source is a directory, not a file: {source}")
+            self.log_action("cp", f"Failed to copy directory {source} to {destination}")
+            return
+
+        if os.path.exists(destination):
+            print(f"Destination already exists: {destination}")
+            self.log_action("cp", f"Failed to copy to {destination} as it already exists")
+            return
+
+        with tarfile.open(self.tar_path, 'r') as tar:
+            with tar.extractfile(source_member) as source_file, open(destination, 'wb') as dest_file:
+                dest_file.write(source_file.read())
+
+        print(f"File copied from {source} to {destination}")
+        self.log_action("cp", f"Copied from {source} to {destination}")
 
     def run(self):
         """Запуск интерфейса командной строки."""
@@ -138,16 +159,3 @@ class FileSystemEmulator:
             else:
                 print(f"Unknown command: {command}")
                 self.log_action("unknown_command", f"Command: {command}")
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Эмулятор файловой системы UNIX.")
-    parser.add_argument('--hostname', required=True, help='Имя компьютера для приглашения к вводу.')
-    parser.add_argument('--tar', required=True, help='Путь к архиву виртуальной файловой системы.')
-    parser.add_argument('--log', required=True, help='Путь к лог-файлу.')
-    
-    args = parser.parse_args()
-
-    # Запуск эмулятора с параметрами
-    emulator = FileSystemEmulator(tar_path=args.tar, hostname=args.hostname, log_file=args.log)
-    emulator.run()
